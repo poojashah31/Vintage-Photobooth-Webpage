@@ -127,41 +127,17 @@ export function ResultsPage({ images, layout, onRestart, onStartOver, onBack }: 
     try {
       const html2canvas = (await import('html2canvas')).default;
 
-      // Capture the strip div (320×960 px) at 2× for sharp PNG output.
-      // onclone converts every <img> inside the clone to a data-URL before
-      // html2canvas touches the canvas, avoiding SecurityError on cross-origin
-      // or locally-served Vite assets.
+      // Captured photos are data-URLs (same-origin).
+      // Sticker PNGs are bundled by Vite and served same-origin.
+      // => useCORS:true is sufficient; allowTaint must be FALSE so
+      //    the canvas stays clean and toBlob() can read pixel data.
       const canvas = await html2canvas(stripRef.current, {
         backgroundColor: '#ffffff',
         scale: 2,
         logging: false,
         useCORS: true,
-        allowTaint: true,
-        imageTimeout: 0,
-        onclone: (_doc: Document, el: HTMLElement) => {
-          const imgs = el.querySelectorAll('img');
-          const promises = Array.from(imgs).map(
-            (img) =>
-              new Promise<void>((resolve) => {
-                if (img.complete && img.naturalWidth > 0) {
-                  try {
-                    const c = document.createElement('canvas');
-                    c.width = img.naturalWidth;
-                    c.height = img.naturalHeight;
-                    c.getContext('2d')?.drawImage(img, 0, 0);
-                    img.src = c.toDataURL('image/png');
-                  } catch {
-                    // Tainted image — leave it as-is; allowTaint handles it
-                  }
-                  resolve();
-                } else {
-                  img.onload = () => resolve();
-                  img.onerror = () => resolve();
-                }
-              }),
-          );
-          return Promise.all(promises).then(() => undefined);
-        },
+        allowTaint: false,
+        imageTimeout: 15000,
       });
 
       canvas.toBlob((blob) => {
@@ -235,7 +211,7 @@ export function ResultsPage({ images, layout, onRestart, onStartOver, onBack }: 
                       <img
                         src={img.url}
                         alt={`Photo ${idx + 1}`}
-                        className="w-full h-full object-contain"
+                        className="w-full h-full object-cover"
                         style={{ transform: 'scaleX(-1)' }}
                       />
                     </div>
