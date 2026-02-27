@@ -122,40 +122,127 @@ export function ResultsPage({ images, layout, onRestart, onStartOver, onBack }: 
 
   const handleSave = async () => {
     if (!stripRef.current || isSaving) return;
-
     setIsSaving(true);
+
     try {
-      const html2canvas = (await import('html2canvas')).default;
+      // ── Canvas setup ─────────────────────────────────────────────────────
+      const SCALE = 2;          // 2× for sharp output
+      const STRIP_W = 320;
+      const STRIP_H = 960;
+      const canvas = document.createElement('canvas');
+      canvas.width = STRIP_W * SCALE;
+      canvas.height = STRIP_H * SCALE;
+      const ctx = canvas.getContext('2d');
+      if (!ctx) throw new Error('Could not get 2D context');
+      ctx.scale(SCALE, SCALE);
 
-      // Captured photos are data-URLs (same-origin).
-      // Sticker PNGs are bundled by Vite and served same-origin.
-      // => useCORS:true is sufficient; allowTaint must be FALSE so
-      //    the canvas stays clean and toBlob() can read pixel data.
-      const canvas = await html2canvas(stripRef.current, {
-        backgroundColor: '#ffffff',
-        scale: 2,
-        logging: false,
-        useCORS: true,
-        allowTaint: false,
-        imageTimeout: 15000,
-      });
+      // ── White background ─────────────────────────────────────────────────
+      ctx.fillStyle = '#ffffff';
+      ctx.fillRect(0, 0, STRIP_W, STRIP_H);
 
-      canvas.toBlob((blob) => {
-        if (!blob) {
-          alert('Error saving image. Please try again.');
-          setIsSaving(false);
-          return;
+      // ── Brown outer border (matches border-8 border-[#8b4513]) ───────────
+      ctx.strokeStyle = '#8b4513';
+      ctx.lineWidth = 8;
+      ctx.strokeRect(4, 4, STRIP_W - 8, STRIP_H - 8);
+
+      // ── Photo slots (mirrors p-3 padding + gap-2 gaps) ───────────────────
+      const PAD = 12;        // p-3 = 12px
+      const GAP = 8;         // gap-2 = 8px
+      const count = images.length;
+      const INNER_W = STRIP_W - PAD * 2;   // 296px
+      const totalGapH = (count - 1) * GAP;
+      const slotH = Math.floor((STRIP_H - PAD * 2 - totalGapH) / count);
+
+      // Helper: load an image without throwing on error
+      const loadImg = (src: string): Promise<HTMLImageElement> =>
+        new Promise((resolve) => {
+          const img = new Image();
+          img.crossOrigin = 'anonymous';
+          img.onload = () => resolve(img);
+          img.onerror = () => resolve(img); // resolve even on failure
+          img.src = src;
+        });
+
+      // ── Draw each photo ──────────────────────────────────────────────────
+      for (let i = 0; i < images.length; i++) {
+        const img = await loadImg(images[i].url);
+        const slotY = PAD + i * (slotH + GAP);
+
+        // Slot border (border-4 border-[#a0826d])
+        ctx.strokeStyle = '#a0826d';
+        ctx.lineWidth = 4;
+        ctx.strokeRect(PAD + 2, slotY + 2, INNER_W - 4, slotH - 4);
+
+        // Clip drawing to inside the border
+        ctx.save();
+        ctx.beginPath();
+        ctx.rect(PAD + 4, slotY + 4, INNER_W - 8, slotH - 8);
+        ctx.clip();
+
+        // object-cover: scale image to fill slot, crop excess
+        const iW = img.naturalWidth || INNER_W;
+        const iH = img.naturalHeight || slotH;
+        const slotRatio = INNER_W / slotH;
+        const imgRatio = iW / iH;
+        let drawW = INNER_W, drawH = slotH, offX = 0, offY = 0;
+        if (imgRatio > slotRatio) {
+          drawW = slotH * imgRatio;
+          offX = -(drawW - INNER_W) / 2;
+        } else {
+          drawH = INNER_W / imgRatio;
+          offY = -(drawH - slotH) / 2;
         }
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = `photobooth-strip-${Date.now()}.png`;
-        document.body.appendChild(a);
-        a.click();
-        document.body.removeChild(a);
-        URL.revokeObjectURL(url);
-        setIsSaving(false);
-      }, 'image/png');
+
+        // Mirror horizontally (scaleX(-1) matches the live preview)
+        ctx.save();
+        ctx.translate(PAD + INNER_W, slotY);
+        ctx.scale(-1, 1);
+        ctx.drawImage(img, offX, offY, drawW, drawH);
+        ctx.restore();
+
+        ctx.restore(); // remove clip
+      }
+
+      // ── Await fonts so cursive note text renders correctly ───────────────
+      await document.fonts.ready;
+
+      // ── Draw stickers ────────────────────────────────────────────────────
+      // x/y in PlacedSticker are the translateX/Y of the 80×80 div,
+      // so visual centre = (x+40, y+40) before scale.
+      const STICKER_SIZE = 80;
+      for (const sticker of placedStickers) {
+        const img = await loadImg(sticker.src);
+        if (!img.naturalWidth) continue;
+        ctx.save();
+        ctx.translate(sticker.x + STICKER_SIZE / 2, sticker.y + STICKER_SIZE / 2);
+        ctx.scale(sticker.scale, sticker.scale);
+        ctx.drawImage(img, -STICKER_SIZE / 2, -STICKER_SIZE / 2, STICKER_SIZE, STICKER_SIZE);
+        ctx.restore();
+      }
+
+      // ── Draw notes ───────────────────────────────────────────────────────
+      for (const note of placedNotes) {
+        ctx.save();
+        ctx.translate(note.x, note.y + 12); // +12 ≈ half the text line height
+        ctx.scale(note.scale, note.scale);
+        ctx.font = `24px "${note.font}", cursive`;
+        ctx.fillStyle = '#8b4513';
+        ctx.textAlign = 'left';
+        ctx.textBaseline = 'top';
+        ctx.fillText(note.text, 0, 0);
+        ctx.restore();
+      }
+
+      // ── Download using dataURL (synchronous, no callback) ────────────────
+      const dataUrl = canvas.toDataURL('image/png');
+      const a = document.createElement('a');
+      a.href = dataUrl;
+      a.download = `photobooth-strip-${Date.now()}.png`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      setIsSaving(false);
+
     } catch (error) {
       console.error('Error saving image:', error);
       alert('Error saving image. Please try again.');
