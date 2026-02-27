@@ -1,4 +1,4 @@
-# 📷 Vintage Photobooth Webpage
+# Vintage Photobooth Webpage
 
 A lightweight, fully client-side web app that lets users capture or upload photos, pick a layout, decorate with stickers and handwritten notes, then download or print the final vintage-style photo strip — all in the browser.
 
