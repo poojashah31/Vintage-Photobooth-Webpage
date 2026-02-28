@@ -3,11 +3,21 @@ import { LayoutType, CapturedImage } from '../App';
 import { useRef, useState } from 'react';
 import { DraggableNote } from './DraggableNote';
 import { DraggableSticker } from './DraggableSticker';
-import butterflyStickerImg from 'figma:asset/2a4a3332fd0eaf2fa25bf3e61a7c19b31cef70cf.png';
-import hibiscusBrownImg from 'figma:asset/03ae981efb3a0887fe17adf7f92c21bee98405f8.png';
-import goldenFlowerImg from 'figma:asset/f590238576fefd9c24fb354a815dc45e601d2c26.png';
-import snoopyImg from 'figma:asset/c7a06596eb83ed1af3024c4e3ccde7559dcb2b65.png';
-import hibiscusWhiteImg from 'figma:asset/2b85ea24917805b77812105a65efb729818ec50a.png';
+import blueFlowerImg from '../assets/Processed_Stickers/BlueFlower.png';
+import blueFlower2Img from '../assets/Processed_Stickers/BlueFlower2.png';
+import butterflyImg from '../assets/Processed_Stickers/Butterfly.png';
+import coolTextImg from '../assets/Processed_Stickers/CoolText.png';
+import darlingFontImg from '../assets/Processed_Stickers/DarlingFont.png';
+import dinosaurImg from '../assets/Processed_Stickers/Dinosaur.png';
+import dolphinImg from '../assets/Processed_Stickers/Dolphin.png';
+import goldenHibiscusImg from '../assets/Processed_Stickers/Golden-Hibiscus.png';
+import hibiscusImg from '../assets/Processed_Stickers/Hibiscus.png';
+import pressedHeartImg from '../assets/Processed_Stickers/PressedHeart.png';
+import purpleHeartImg from '../assets/Processed_Stickers/PurpleHeart.png';
+import redCherryImg from '../assets/Processed_Stickers/RedCherry.png';
+import snoopyFlowersImg from '../assets/Processed_Stickers/SnoopywithFlowers.png';
+import snoopyHeartsImg from '../assets/Processed_Stickers/SnoopywithHearts.png';
+import whiteHibiscusImg from '../assets/Processed_Stickers/White-Hibiscus.png';
 
 interface ResultsPageProps {
   images: CapturedImage[];
@@ -35,11 +45,21 @@ interface PlacedNote {
 }
 
 const stickers = [
-  { id: 'butterfly', src: butterflyStickerImg, name: 'Butterfly' },
-  { id: 'hibiscus-brown', src: hibiscusBrownImg, name: 'Hibiscus' },
-  { id: 'golden-flower', src: goldenFlowerImg, name: 'Golden Flower' },
-  { id: 'snoopy', src: snoopyImg, name: 'Snoopy' },
-  { id: 'hibiscus-white', src: hibiscusWhiteImg, name: 'White Hibiscus' },
+  { id: 'butterfly', src: butterflyImg, name: 'Butterfly' },
+  { id: 'blue-flower', src: blueFlowerImg, name: 'Blue Flower' },
+  { id: 'blue-flower-2', src: blueFlower2Img, name: 'Blue Bloom' },
+  { id: 'hibiscus', src: hibiscusImg, name: 'Hibiscus' },
+  { id: 'golden-hibiscus', src: goldenHibiscusImg, name: 'Gold Hibiscus' },
+  { id: 'white-hibiscus', src: whiteHibiscusImg, name: 'White Hibiscus' },
+  { id: 'pressed-heart', src: pressedHeartImg, name: 'Heart' },
+  { id: 'purple-heart', src: purpleHeartImg, name: 'Purple Heart' },
+  { id: 'red-cherry', src: redCherryImg, name: 'Cherry' },
+  { id: 'dinosaur', src: dinosaurImg, name: 'Dinosaur' },
+  { id: 'dolphin', src: dolphinImg, name: 'Dolphin' },
+  { id: 'snoopy-flowers', src: snoopyFlowersImg, name: 'Snoopy 🌸' },
+  { id: 'snoopy-hearts', src: snoopyHeartsImg, name: 'Snoopy ❤️' },
+  { id: 'cool-text', src: coolTextImg, name: 'Cool Text' },
+  { id: 'darling-font', src: darlingFontImg, name: 'Darling' },
 ];
 
 export function ResultsPage({ images, layout, onRestart, onStartOver, onBack }: ResultsPageProps) {
@@ -395,29 +415,33 @@ export function ResultsPage({ images, layout, onRestart, onStartOver, onBack }: 
 
             {/* Stickers — shown below the note input on all screen sizes */}
             <div className="w-full max-w-md mt-6 order-4">
-              <div className="bg-[#d4a574] border-4 border-[#8b4513] rounded-3xl p-6 shadow-lg">
-                <h3 className="text-xl text-[#8b4513] font-serif mb-4 text-center">
+              <div className="bg-[#d4a574] border-4 border-[#8b4513] rounded-3xl p-5 shadow-lg">
+                <h3 className="text-xl text-[#8b4513] font-serif mb-3 text-center">
                   🎨 Add Stickers
                 </h3>
-                <div className="grid grid-cols-3 gap-3">
-                  {stickers.map((sticker) => (
-                    <button
-                      key={sticker.id}
-                      onClick={() => handleAddSticker(sticker.src)}
-                      aria-label={`Add ${sticker.name} sticker`}
-                      className="bg-white border-2 border-[#8b4513] rounded-2xl p-3
-                                 hover:scale-105 hover:shadow-lg transition-all duration-300
-                                 active:scale-95"
-                    >
-                      <img
-                        src={sticker.src}
-                        alt={sticker.name}
-                        className="w-full h-16 object-contain"
-                        style={{ mixBlendMode: 'multiply' }}
-                      />
-                      <p className="text-[#8b4513] font-serif text-xs mt-1 text-center">{sticker.name}</p>
-                    </button>
-                  ))}
+                <div
+                  className="overflow-y-auto rounded-2xl"
+                  style={{ maxHeight: '300px' }}
+                >
+                  <div className="grid grid-cols-3 gap-3">
+                    {stickers.map((sticker) => (
+                      <button
+                        key={sticker.id}
+                        onClick={() => handleAddSticker(sticker.src)}
+                        aria-label={`Add ${sticker.name} sticker`}
+                        className="bg-white border-2 border-[#8b4513] rounded-2xl p-3
+                                   hover:scale-105 hover:shadow-lg transition-all duration-300
+                                   active:scale-95 flex flex-col items-center"
+                      >
+                        <img
+                          src={sticker.src}
+                          alt={sticker.name}
+                          className="w-full h-16 object-contain"
+                        />
+                        <p className="text-[#8b4513] font-serif text-xs mt-1 text-center leading-tight">{sticker.name}</p>
+                      </button>
+                    ))}
+                  </div>
                 </div>
                 <p className="text-[#8b4513] font-serif text-xs text-center mt-3">
                   💡 Tap to place, then drag on the strip to position
